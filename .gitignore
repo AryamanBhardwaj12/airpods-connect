@@ -1,0 +1,11 @@
+App/
+Data/
+Releases/
+Bypass/
+.agent/
+**/bin/
+**/obj/
+*.pdb
+*.log
+*.user
+.env*

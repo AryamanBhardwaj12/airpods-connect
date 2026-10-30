@@ -1,0 +1,2 @@
+7a8c2700b3d10b128e86bfa1c2fa5497b3be6995039e1c635ba049c5e9bddb4e  AirPods-Connect-Runtime-Included-Windows-x64-v2.zip
+0cc852c4e15271f1e15284df659ffd596d7df563cc0d7905a14c40268ec621a1  AirPods-Connect-Small-Windows-x64-v2.zip

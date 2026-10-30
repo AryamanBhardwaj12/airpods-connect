@@ -1,0 +1,43 @@
+AIRPODS CONNECT - Windows 10 / 11, Intel or AMD 64-bit
+
+1. Pair your own AirPods in Windows Settings > Bluetooth & devices.
+   Their Bluetooth name should contain AirPods. If already paired, leave them paired.
+2. Right-click the downloaded ZIP and choose Extract All. Open the extracted folder.
+3. Double-click SETUP.cmd (Windows may display it simply as SETUP).
+   Use your normal Windows account; do not run as a different administrator.
+   If more than one pair is listed, type the number for yours and press Enter.
+4. Put your AirPods in and left-click the AirPods icon beside the Windows clock.
+   If it is hidden, click the small up-arrow by the clock. Drag it out to keep it visible.
+
+If setup fails: double-click OPEN-SETUP-LOG.cmd and send the error message for help.
+The log is saved locally at %TEMP%\AirPodsConnect-Setup.log.
+Do not run SETUP while browsing inside the ZIP; extract the entire ZIP first.
+
+The icon starts when you sign in. It only connects when you click it.
+Right-click it for Disconnect audio, Bluetooth settings, or Exit.
+Keep the AirPods awake and nearby. Another phone or computer can hold their connection.
+The app requests a connection; it does not force your Windows default sound-output choice.
+If needed, select the AirPods in Windows Sound output settings once.
+
+Use the Runtime-Included ZIP if you do not know whether .NET is installed.
+The Small ZIP needs Microsoft .NET 8 Desktop Runtime, Windows x64:
+https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+Choose Desktop Runtime > Windows > x64. You do not need an SDK.
+Install that runtime normally, then run SETUP again.
+
+No experimental drivers, Secure Boot changes or microphone bypass are included.
+This app does not change the Bluetooth sound-quality limitation when using the mic.
+No passwords or original owner's AirPods pairing/settings are included.
+
+Installed folder: %LOCALAPPDATA%\AirPodsConnect
+To remove: open that installed folder and run UNINSTALL.cmd.
+It removes the tray/startup shortcuts; files/settings stay in that folder.
+Use UNINSTALL.cmd, not the internal Uninstall.ps1 script.
+To reinstall or choose different AirPods: uninstall, move the installed folder aside,
+then run the downloaded SETUP again. Existing installations are never overwritten.
+You may delete the downloaded/extracted setup files after a successful installation.
+
+The app is a personal unsigned utility. Windows or your email provider may warn or
+block it. This package does not disable security protections. If work/school policy
+blocks scripts or apps, use the normal administrator/help process.
+Some email services reject ZIPs containing apps; share a cloud download link instead.

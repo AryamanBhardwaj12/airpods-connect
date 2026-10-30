@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>AirPodsConnect</AssemblyName>
+    <Product>AirPods Connect</Product>
+    <Description>One click AirPods audio connection</Description>
+    <ApplicationIcon>AirPods.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="../Shared.cs" Link="Shared.cs" /></ItemGroup>
+</Project>
