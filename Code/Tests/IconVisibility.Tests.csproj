@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms><PlatformTarget>x64</PlatformTarget>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <StartupObject>AirPodsConnect.IconVisibilityTests</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Tray/*.cs" Link="Tray/%(Filename)%(Extension)" />
+    <Compile Include="../Shared.cs" Link="Shared.cs" />
+  </ItemGroup>
+</Project>

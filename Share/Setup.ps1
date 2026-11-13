@@ -49,7 +49,8 @@ try {
     if ($running.Count -ne 1) { throw 'Setup copied the app, but its tray process did not stay running. Keep this message and ask for help.' }
     Write-Host ''
     Write-Host 'Ready! Left-click the AirPods icon beside the Windows clock to connect.' -ForegroundColor Green
-    Write-Host 'If hidden, click the small up-arrow by the clock and drag the icon out.'
+    Write-Host 'On the Keep AirPods visible page, click Show my AirPods icon to save the visibility preference.'
+    Write-Host 'You can reopen that page by right-clicking the AirPods tray icon.'
     Write-Host 'It will appear at Windows sign-in. Starting Windows does not auto-connect.'
     Write-Host "Installed at: $destination"
     Write-Host 'You can delete the downloaded ZIP and extracted setup folder now.'

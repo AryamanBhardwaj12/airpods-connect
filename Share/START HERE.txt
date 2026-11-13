@@ -6,8 +6,10 @@ AIRPODS CONNECT - Windows 10 / 11, Intel or AMD 64-bit
 3. Double-click SETUP.cmd (Windows may display it simply as SETUP).
    Use your normal Windows account; do not run as a different administrator.
    If more than one pair is listed, type the number for yours and press Enter.
-4. Put your AirPods in and left-click the AirPods icon beside the Windows clock.
-   If it is hidden, click the small up-arrow by the clock. Drag it out to keep it visible.
+4. On the Keep AirPods visible page, click Show my AirPods icon.
+   This saves Windows' visibility preference. You can reopen the page from the icon's
+   right-click menu (look in the up-arrow beside the clock if needed).
+5. Put your AirPods in and left-click the AirPods icon beside the Windows clock.
 
 If setup fails: double-click OPEN-SETUP-LOG.cmd and send the error message for help.
 The log is saved locally at %TEMP%\AirPodsConnect-Setup.log.

@@ -30,46 +30,59 @@ internal sealed class Tray : ApplicationContext
     readonly ToolStripMenuItem connect = new("Connect AirPods");
     readonly ToolStripMenuItem disconnect = new("Disconnect audio");
     readonly System.Windows.Forms.Timer timer = new() { Interval = 20000 };
-    readonly EventWaitHandle stop = new(false, EventResetMode.ManualReset, Store.ShutdownName);
+    readonly EventWaitHandle stop;
     readonly Control dispatcher = new();
     readonly RegisteredWaitHandle stopWait;
     readonly Dictionary<string, Icon> icons = new();
-    bool busy, exiting;
+    bool busy;
+    volatile bool exiting;
     DateTime retryAfter;
     string lastState = "";
     Result? latest;
     Form? details;
+    Font? detailsFont;
+    IconVisibilityPage? visibilityPage;
+    readonly Func<string, Task<Result>> run;
     TextBox? detailsText;
     readonly string helper = Path.Combine(AppContext.BaseDirectory, "AirPodsHelper.exe");
-    public Tray()
+    public Tray() : this(null, true) { }
+    internal Tray(Func<string, Task<Result>>? run, bool startServices)
     {
+        stop = startServices ? new(false, EventResetMode.ManualReset, Store.ShutdownName) : new(false, EventResetMode.ManualReset);
+        this.run = run ?? (operation => Runner.Run(helper, new[] { operation }, operation == "--status" ? 7000 : 30000));
         dispatcher.CreateControl();
         icons["idle"] = MakeIcon(Color.FromArgb(190, 198, 210));
         icons["busy"] = MakeIcon(Color.FromArgb(255, 190, 65));
         icons["connected"] = MakeIcon(Color.FromArgb(55, 218, 137));
         icons["error"] = MakeIcon(Color.FromArgb(255, 100, 100));
-        icon = new NotifyIcon { Icon = icons["idle"], Text = "AirPods Connect · checking status", Visible = true, ContextMenuStrip = menu };
+        icon = new NotifyIcon { Icon = icons["idle"], Text = "AirPods Connect · checking status", Visible = startServices, ContextMenuStrip = menu };
         status.Click += (_, _) => ShowDetails();
         connect.Click += async (_, _) => await Act("--connect");
         disconnect.Click += async (_, _) => await Act("--disconnect");
         menu.Items.AddRange(new ToolStripItem[] { status, new ToolStripSeparator(), connect, disconnect,
             new ToolStripSeparator(), new ToolStripMenuItem("Connection details", null, (_, _) => ShowDetails()),
+            new ToolStripMenuItem("Keep AirPods visible", null, (_, _) => ShowVisibility()),
             new ToolStripMenuItem("Bluetooth settings", null, (_, _) => Open("ms-settings:bluetooth")),
             new ToolStripMenuItem("Sound output settings", null, (_, _) => Open("ms-settings:sound")),
             new ToolStripSeparator(), new ToolStripMenuItem("Exit", null, (_, _) => ExitThread()) });
         icon.MouseClick += async (_, e) => { if (e.Button == MouseButtons.Left) await Act("--connect"); };
         timer.Tick += async (_, _) => await Refresh();
-        stopWait = ThreadPool.RegisterWaitForSingleObject(stop, (_, _) => dispatcher.BeginInvoke((Action)ExitThread), null, -1, true);
-        timer.Start();
-        Store.Log("Tray started; startup does not connect.");
-        _ = Refresh();
+        stopWait = ThreadPool.RegisterWaitForSingleObject(stop, (_, _) => TrayLifecycle.PostExit(dispatcher, () => exiting, ExitThread), null, -1, true);
+        if (startServices)
+        {
+            timer.Start();
+            Store.Log("Tray started; startup does not connect.");
+            _ = Refresh();
+            if (!File.Exists(Path.Combine(Store.Data, "icon-visibility-shown")))
+                dispatcher.BeginInvoke((Action)(() => { if (!exiting) ShowVisibility(); }));
+        }
     }
     static void Open(string uri) => Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
     async Task Refresh()
     {
         if (busy || exiting) return;
         busy = true;
-        try { var r = await Runner.Run(helper, new[] { "--status" }, 7000); if (!exiting) Apply(r); }
+        try { var r = await run("--status"); if (!exiting) Apply(r); }
         finally { busy = false; }
     }
     async Task Act(string operation)
@@ -82,14 +95,14 @@ internal sealed class Tray : ApplicationContext
         Store.Log("Click action " + operation);
         try
         {
-            Result r = await Runner.Run(helper, new[] { operation }, 30000);
+            Result r = await run(operation);
             if (exiting) return;
             if (r.Code is 6 or 7) retryAfter = DateTime.UtcNow.AddSeconds(30);
             Apply(r);
             Store.Log("Action result " + System.Text.Json.JsonSerializer.Serialize(r, Store.Json));
             Balloon(r.Code == 0 ? "AirPods Connect" : "AirPods connection", r.Message);
         }
-        finally { busy = false; connect.Enabled = disconnect.Enabled = true; if (!exiting) timer.Start(); }
+        finally { busy = false; if (!exiting) { connect.Enabled = disconnect.Enabled = true; timer.Start(); } }
     }
     void Apply(Result r)
     {
@@ -114,13 +127,29 @@ internal sealed class Tray : ApplicationContext
     {
         if (details != null && !details.IsDisposed) { details.Activate(); return; }
         details = new Form { Text = "AirPods Connect — Connection details", Width = 580, Height = 440, StartPosition = FormStartPosition.CenterScreen, Icon = icons["idle"] };
-        detailsText = new TextBox { Multiline = true, ReadOnly = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical, Font = new Font("Segoe UI", 11), Text = Describe() };
+        detailsFont = new Font("Segoe UI", 11);
+        detailsText = new TextBox { Multiline = true, ReadOnly = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical, Font = detailsFont, Text = Describe() };
+        var ownedFont = detailsFont;
+        details.FormClosed += (_, _) => ownedFont.Dispose();
         details.Controls.Add(detailsText); details.Show();
+    }
+    void ShowVisibility()
+    {
+        if (exiting) return;
+        if (visibilityPage is { IsDisposed: false }) { visibilityPage.Activate(); return; }
+        visibilityPage = new IconVisibilityPage(new IconVisibility(new WindowsIconRegistry(), ExecutableIdentity.Current()),
+            () => !exiting, () => { icon.Visible = false; icon.Visible = true; }, () =>
+            {
+                try { Directory.CreateDirectory(Store.Data); File.WriteAllText(Path.Combine(Store.Data, "icon-visibility-shown"), "Shown; no preference changed by opening this page."); }
+                catch (Exception ex) when (IconVisibility.Expected(ex)) { Store.Log("Could not save icon-page shown marker: " + ex.Message); }
+            });
+        visibilityPage.Show();
     }
     protected override void ExitThreadCore()
     {
         if (exiting) return;
-        exiting = true; timer.Stop(); timer.Dispose(); stopWait.Unregister(null); stop.Dispose();
+        exiting = true; visibilityPage?.Close();
+        timer.Stop(); timer.Dispose(); stopWait.Unregister(null); stop.Dispose();
         details?.Close(); icon.Visible = false; icon.Dispose(); menu.Dispose();
         foreach (var value in icons.Values) value.Dispose(); dispatcher.Dispose();
         Store.Log("Tray exited cleanly."); base.ExitThreadCore();

@@ -32,7 +32,7 @@ internal static class Store
     public static string Root => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."));
     public static string Data => Path.Combine(Root, "Data");
     public static string Config => Path.Combine(Data, "settings.json");
-    public static string Sid => WindowsIdentity.GetCurrent().User!.Value;
+    public static string Sid { get { using var identity = WindowsIdentity.GetCurrent(); return identity.User!.Value; } }
     public static string ShutdownName => @"Local\AirPodsConnect-Exit-" + Sid;
     public static Settings Load(string path)
     {

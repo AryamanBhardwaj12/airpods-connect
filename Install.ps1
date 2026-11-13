@@ -4,6 +4,17 @@ $root = $PSScriptRoot
 $app = Join-Path $root 'App'
 $stage = Join-Path $root 'Data\Stage'
 $config = Join-Path $root 'Data\settings.json'
+$exe = Join-Path $app 'AirPodsConnect.exe'
+$shell = New-Object -ComObject WScript.Shell
+$shortcutPaths = @([Environment]::GetFolderPath('Startup'), [Environment]::GetFolderPath('Programs')) | ForEach-Object { Join-Path $_ 'AirPods Connect.lnk' }
+function Assert-OwnedShortcut([string]$path) {
+    if (Test-Path -LiteralPath $path) {
+        try { $target = $shell.CreateShortcut($path).TargetPath } catch { throw "Existing shortcut belongs to another app: $path" }
+        if ([string]::IsNullOrWhiteSpace($target) -or $target -ne $exe) { throw "Existing shortcut belongs to another app: $path" }
+    }
+}
+# Read BOTH targets before build, stopping a tray, or changing files/config/links.
+foreach ($path in $shortcutPaths) { Assert-OwnedShortcut $path }
 if (-not $SkipBuild) { & (Join-Path $root 'Code\Build.ps1') }
 if (-not (Test-Path -LiteralPath (Join-Path $stage 'AirPodsConnect.exe'))) { throw 'Build not found. Run Code\Build.ps1 first.' }
 if (-not $BluetoothInstanceId) {
@@ -26,7 +37,6 @@ $settings | ConvertTo-Json | Set-Content -LiteralPath $tempConfig -Encoding utf8
 $check = & (Join-Path $stage 'AirPodsHelper.exe') --status --config $tempConfig | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0) { throw $check.Message }
 # Retain previous publish output until the staged replacement and config have validated.
-$exe = Join-Path $app 'AirPodsConnect.exe'
 if (Test-Path -LiteralPath $exe) { Start-Process -FilePath $exe -ArgumentList '--exit' -WindowStyle Hidden -Wait }
 $running = @(Get-Process AirPodsConnect,AirPodsHelper -ErrorAction SilentlyContinue | Where-Object { $_.Path -and (Split-Path $_.Path -Parent) -eq $app })
 foreach ($p in $running) { if (-not $p.WaitForExit(4000)) { throw 'An app operation is still running. Wait and retry installation.' } }
@@ -39,11 +49,10 @@ if (Test-Path -LiteralPath $app) {
 New-Item -ItemType Directory -Path $app -Force | Out-Null
 Copy-Item -Path (Join-Path $stage '*') -Destination $app -Recurse
 Move-Item -LiteralPath $tempConfig -Destination $config -Force
-$shell = New-Object -ComObject WScript.Shell
-foreach ($folder in @([Environment]::GetFolderPath('Startup'), [Environment]::GetFolderPath('Programs'))) {
-    $path = Join-Path $folder 'AirPods Connect.lnk'
+foreach ($path in $shortcutPaths) {
+    Assert-OwnedShortcut $path
     $shortcut = $shell.CreateShortcut($path)
-    if ((Test-Path -LiteralPath $path) -and $shortcut.TargetPath -ne $exe) { throw "Existing shortcut belongs to another app: $path" }
+    if ((Test-Path -LiteralPath $path) -and ([string]::IsNullOrWhiteSpace($shortcut.TargetPath) -or $shortcut.TargetPath -ne $exe)) { throw "Existing shortcut belongs to another app: $path" }
     $shortcut.TargetPath = $exe; $shortcut.WorkingDirectory = $app; $shortcut.IconLocation = "$exe,0"
     $shortcut.Description = 'Left-click the AirPods tray icon to connect'; $shortcut.Save()
 }
